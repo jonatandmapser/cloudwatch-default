@@ -1,0 +1,63 @@
+ [{
+     "TimePeriod": {
+         "Start": "2022-10-01",
+         "End": "2022-11-01"
+     },
+     "Groups": [{
+             "Attributes": {
+                 "databaseEngine": "MySQL",
+                 "instanceType": "db.t3.medium",
+                 "region": "eu-west-1",
+                 "deploymentOption": "Single-AZ"
+             },
+             "Coverage": {
+                 "CoverageHours": {
+                     "OnDemandHours": "378.33819375",
+                     "ReservedHours": "365.66180625",
+                     "TotalRunningHours": "744",
+                     "CoverageHoursPercentage": "49.1480922379"
+                 }
+             }
+         },
+         {
+             "Attributes": {
+                 "databaseEngine": "MySQL",
+                 "instanceType": "db.m5.4xlarge",
+                 "region": "eu-west-1",
+                 "deploymentOption": "Multi-AZ"
+             },
+             "Coverage": {
+                 "CoverageHours": {
+                     "OnDemandHours": "137",
+                     "ReservedHours": "607",
+                     "TotalRunningHours": "744",
+                     "CoverageHoursPercentage": "81.5860215054"
+                 }
+             }
+         },
+         {
+             "Attributes": {
+                 "databaseEngine": "MySQL",
+                 "instanceType": "db.m5.xlarge",
+                 "region": "eu-west-1",
+                 "deploymentOption": "Single-AZ"
+             },
+             "Coverage": {
+                 "CoverageHours": {
+                     "OnDemandHours": "64",
+                     "ReservedHours": "680",
+                     "TotalRunningHours": "744",
+                     "CoverageHoursPercentage": "91.3978494624"
+                 }
+             }
+         }
+     ],
+     "Total": {
+         "CoverageHours": {
+             "OnDemandHours": "874.98123175",
+             "ReservedHours": "1652.66180625",
+             "TotalRunningHours": "2527.643038",
+             "CoverageHoursPercentage": "65.3835126798"
+         }
+     }
+ }]
