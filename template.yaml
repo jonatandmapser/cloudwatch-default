@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'Creacion de Cloudwatch Dasboard Default y alarmas as'
+Description: 'Creacion de Cloudwatch Dasboard Default y alarmas'
 Globals:
   Function:
     Timeout: 30

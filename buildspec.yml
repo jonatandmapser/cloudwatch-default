@@ -2,13 +2,13 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      python: 3.8
+      python: 3.9
     commands:
       - pip install --upgrade pip
       - pip install --upgrade awscli aws-sam-cli
       # Enable docker https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-custom-image.html
-      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
-      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      #- nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
+      #- timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - echo "Instalamos requirements"
       - pip install -r CloudwatchDefault/requirements.txt -t CloudwatchDefault/lib
       - pip install -r PutMetricsFunction/requirements.txt -t PutMetricsFunction/lib
@@ -20,16 +20,18 @@ phases:
       - zip -r9 ../CloudwatchDefault.zip .
       - cd ..
       - zip -g CloudwatchDefault.zip app.py
+      - cd ..
       - echo "Zipping deployment package function PutMetricsFunction..."
       - cd PutMetricsFunction/
       - cd lib
       - zip -r9 ../PutMetricsFunction.zip .
       - cd ..
       - zip -g PutMetricsFunction.zip app.py
+      - cd ..
   post_build:
     commands:
       - echo "Uploading zip CloudwatchDefault to S3..."
-      - aws s3 cp CloudwatchDefault.zip s3://pruebacodebuildjonatan
+      - aws s3 cp CloudwatchDefault/CloudwatchDefault.zip s3://pruebacodebuildjonatan
       - echo "Uploading zip PutMetricsFunction to S3..."
-      - aws s3 cp PutMetricsFunction.zip s3://pruebacodebuildjonatan
+      - aws s3 cp PutMetricsFunction/PutMetricsFunction.zip s3://pruebacodebuildjonatan
       - echo "DONE!!"  
