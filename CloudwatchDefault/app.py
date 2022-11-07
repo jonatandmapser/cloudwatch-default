@@ -25,48 +25,55 @@ def lambda_handler(event, context):
         for j in i["Instances"]:
             # comprobar el estado de la instancia y si es terminada no hacer nada
             if j["State"]["Name"] != "terminated":
-                instances_all.append(
-                    {
-                        "InstanceId": j["InstanceId"],
-                        "InstanceType": j["InstanceType"],
-                        "ImageId": j["ImageId"],
-                    }
-                )
-                volumenes.append(
-                    {"VolumenId": j["BlockDeviceMappings"][0]["Ebs"]["VolumeId"]}
-                )
-                region = j["Placement"]["AvailabilityZone"][:-1]
-                print(region)
-                try:
-                    # TODO: write code...
-                    if j['PlatformDetails'] == "Linux/UNIX":
-                        instances_linux.append(
-                            {
-                                "InstanceId": j["InstanceId"],
-                                "InstanceType": j["InstanceType"],
-                                "ImageId": j["ImageId"],
-                            }
+                if j["State"]["Name"] != "stopped":
+                    instances_all.append(
+                        {
+                            "InstanceId": j["InstanceId"],
+                            "InstanceType": j["InstanceType"],
+                            "ImageId": j["ImageId"],
+                        }
+                    )
+                    for vol in j["BlockDeviceMappings"]:
+                        volumenes.append(
+                            {"VolumenId": vol["Ebs"]["VolumeId"]}
                         )
-                    else:
-                        instances_windows.append(
-                            {
-                                "InstanceId": j["InstanceId"],
-                                "InstanceType": j["InstanceType"],
-                                "ImageId": j["ImageId"],
-                            }
-                        )
-                except Exception as e:
-                    print(e)
-
+                    region = j["Placement"]["AvailabilityZone"][:-1]
+                    print(region)
+                    try:
+                        # TODO: write code...
+                        if j['PlatformDetails'] == "Linux/UNIX":
+                            instances_linux.append(
+                                {
+                                    "InstanceId": j["InstanceId"],
+                                    "InstanceType": j["InstanceType"],
+                                    "ImageId": j["ImageId"],
+                                }
+                            )
+                        else:
+                            instances_windows.append(
+                                {
+                                    "InstanceId": j["InstanceId"],
+                                    "InstanceType": j["InstanceType"],
+                                    "ImageId": j["ImageId"],
+                                }
+                            )
+                    except Exception as e:
+                        print(e)
+            
             for t in j["Tags"]:
                 if "no-monitoring" in t["Key"]:
-                    if j["InstanceId"] in instances_all:
-                        instances_all.remove(j["InstanceId"])
-                    if j["InstanceId"] in instances_linux:
-                        instances_linux.remove(j["InstanceId"])
-                    if j["InstanceId"] in instances_windows:
-                        instances_windows.remove(j["InstanceId"])
-                    volumenes.remove(j["BlockDeviceMappings"][0]["Ebs"]["VolumeId"])
+                    for i in instances_all:
+                        if j["InstanceId"] in i["InstanceId"]:
+                            instances_all.remove(i)
+                    for i in instances_linux:
+                        if j["InstanceId"] in i["InstanceId"]:
+                            instances_linux.remove(i)
+                    for i in instances_windows:
+                        if j["InstanceId"] in i["InstanceId"]:
+                            instances_windows.remove(i)
+                    for v in volumenes:
+                        if vol["Ebs"]["VolumeId"] in volumenes:
+                            volumenes.remove(v) 
 
         db_instances = RDS_client.describe_db_instances()
         for i in db_instances["DBInstances"]:
@@ -204,95 +211,95 @@ def lambda_handler(event, context):
         ############RDS###########
 
         ############EC2###########
-        CPUUtilization_instances = r'{"type": "metric", "x": 12, "y": 1, "width": 12, "height": 6, "properties": {"metrics": [template], "view": "timeSeries", "stacked": false, "region": "eu-west-1", "stat": "Average", "period": 5, "title": "CPU Usage" }}'.replace(
-            "template", CPUUtilization_string
-        )
-        CPUCreditBalance_instances = (
-            r'{"type": "metric", "x": 0, "y": 1, "width": 12, "height": 6, "properties": {"metrics": ['
-            + CPUCreditBalance_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "CPU Credit Balance" }}'
-        )
-        Mem_Used_percent_lin_instances = (
-            r'{"type": "metric", "x": 12, "y": 2, "width": 12, "height": 6, "properties": {"metrics": ['
-            + Mem_Used_percent_lin_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "RAM_Usage_Linux" }}'
-        )
-        Mem_Used_percent_win_instances = (
-            r'{"type": "metric", "x": 0, "y": 2, "width": 12, "height": 6, "properties": {"metrics": ['
-            + Mem_Used_percent_win_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "RAM_Usage_Windows" }}'
-        )
-        Disk_Used_percent_win_instances = (
-            r'{"type": "metric", "x": 0, "y": 3, "width": 12, "height": 6, "properties": {"metrics": ['
-            + Disk_Used_percent_win_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "Disk_Usage_Windows" }}'
-        )
-        Disk_Used_percent_lin_instances = (
-            r'{"type": "metric", "x": 12, "y": 3, "width": 12, "height": 6, "properties": {"metrics": ['
-            + Disk_Used_percent_lin_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "Disk_Usage_Linux" }}'
-        )
-        StatusCheckFailed_Instance_instances = (
-            r'{"type": "metric", "x": 0, "y": 4, "width": 12, "height": 6, "properties": {"metrics": ['
-            + StatusCheckFailed_Instance_string
-            + r'], "view": "singleValue", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 300, "title": "StatusCheckFailed_Instance" }}'
-        )
-        StatusCheckFailed_System_instances = (
-            r'{"type": "metric", "x": 12, "y": 4, "width": 12, "height": 6, "properties": {"metrics": ['
-            + StatusCheckFailed_System_string
-            + r'], "view": "singleValue", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 300, "title": "StatusCheckFailed_System" }}'
-        )
-        VolumeQueueLength_instances = (
-            r'{"type": "metric", "x": 0, "y": 5, "width": 24, "height": 6, "properties": {"metrics": ['
-            + VolumeQueueLength_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "VolumeQueueLength" }}'
-        )
+    CPUUtilization_instances = r'{"type": "metric", "x": 12, "y": 1, "width": 12, "height": 6, "properties": {"metrics": [template], "view": "timeSeries", "stacked": false, "region": "eu-west-1", "stat": "Average", "period": 5, "title": "CPU Usage" }}'.replace(
+        "template", CPUUtilization_string
+    )
+    CPUCreditBalance_instances = (
+        r'{"type": "metric", "x": 0, "y": 1, "width": 12, "height": 6, "properties": {"metrics": ['
+        + CPUCreditBalance_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "CPU Credit Balance" }}'
+    )
+    Mem_Used_percent_lin_instances = (
+        r'{"type": "metric", "x": 12, "y": 2, "width": 12, "height": 6, "properties": {"metrics": ['
+        + Mem_Used_percent_lin_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "RAM_Usage_Linux" }}'
+    )
+    Mem_Used_percent_win_instances = (
+        r'{"type": "metric", "x": 0, "y": 2, "width": 12, "height": 6, "properties": {"metrics": ['
+        + Mem_Used_percent_win_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "RAM_Usage_Windows" }}'
+    )
+    Disk_Used_percent_win_instances = (
+        r'{"type": "metric", "x": 0, "y": 3, "width": 12, "height": 6, "properties": {"metrics": ['
+        + Disk_Used_percent_win_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "Disk_Usage_Windows" }}'
+    )
+    Disk_Used_percent_lin_instances = (
+        r'{"type": "metric", "x": 12, "y": 3, "width": 12, "height": 6, "properties": {"metrics": ['
+        + Disk_Used_percent_lin_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "Disk_Usage_Linux" }}'
+    )
+    StatusCheckFailed_Instance_instances = (
+        r'{"type": "metric", "x": 0, "y": 4, "width": 12, "height": 6, "properties": {"metrics": ['
+        + StatusCheckFailed_Instance_string
+        + r'], "view": "singleValue", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 300, "title": "StatusCheckFailed_Instance" }}'
+    )
+    StatusCheckFailed_System_instances = (
+        r'{"type": "metric", "x": 12, "y": 4, "width": 12, "height": 6, "properties": {"metrics": ['
+        + StatusCheckFailed_System_string
+        + r'], "view": "singleValue", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 300, "title": "StatusCheckFailed_System" }}'
+    )
+    VolumeQueueLength_instances = (
+        r'{"type": "metric", "x": 0, "y": 5, "width": 24, "height": 6, "properties": {"metrics": ['
+        + VolumeQueueLength_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "VolumeQueueLength" }}'
+    )
 
-        ############RDS###########
-        CPUUtilizationRDS_instances = (
-            r'{"type": "metric", "x": 0, "y": 6, "width": 24, "height": 6, "properties": {"metrics": ['
-            + CPUUtilizationRDS_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "CPU Utilization RDS" }}'
-        )
-        FreeableMemory_instances = (
-            r'{"type": "metric", "x": 12, "y": 6, "width": 24, "height": 6, "properties": {"metrics": ['
-            + FreeableMemory_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "Freeable Memory RDS" }}'
-        )
-        FreeStorageSpace_instances = (
-            r'{"type": "metric", "x": 0, "y": 7, "width": 24, "height": 6, "properties": {"metrics": ['
-            + FreeStorageSpace_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "Free Storage Space RDS" }}'
-        )
-        DiskQueueDepth_instances = (
-            r'{"type": "metric", "x": 12, "y": 7, "width": 24, "height": 6, "properties": {"metrics": ['
-            + DiskQueueDepth_string
-            + r'], "view": "timeSeries", "stacked": false, "region": "'
-            + region
-            + r'", "stat": "Average", "period": 5, "title": "Disk Queue Depth RDS" }}'
-        )
+    ############RDS###########
+    CPUUtilizationRDS_instances = (
+        r'{"type": "metric", "x": 0, "y": 6, "width": 24, "height": 6, "properties": {"metrics": ['
+        + CPUUtilizationRDS_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "CPU Utilization RDS" }}'
+    )
+    FreeableMemory_instances = (
+        r'{"type": "metric", "x": 12, "y": 6, "width": 24, "height": 6, "properties": {"metrics": ['
+        + FreeableMemory_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "Freeable Memory RDS" }}'
+    )
+    FreeStorageSpace_instances = (
+        r'{"type": "metric", "x": 0, "y": 7, "width": 24, "height": 6, "properties": {"metrics": ['
+        + FreeStorageSpace_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "Free Storage Space RDS" }}'
+    )
+    DiskQueueDepth_instances = (
+        r'{"type": "metric", "x": 12, "y": 7, "width": 24, "height": 6, "properties": {"metrics": ['
+        + DiskQueueDepth_string
+        + r'], "view": "timeSeries", "stacked": false, "region": "'
+        + region
+        + r'", "stat": "Average", "period": 5, "title": "Disk Queue Depth RDS" }}'
+    )
 
     response = CW_client.put_dashboard(
         DashboardName="Cloudwatch-Default",
